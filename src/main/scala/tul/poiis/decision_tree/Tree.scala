@@ -1,6 +1,6 @@
 package tul.poiis.decision_tree
 
-class SplitFeature {}
+case class SplitFeature(val index: Int) {}
 
 
 case class Tree(val parent: Tree,

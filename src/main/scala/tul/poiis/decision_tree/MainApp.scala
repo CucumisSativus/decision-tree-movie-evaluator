@@ -73,7 +73,7 @@ object MainApp extends App{
       val child = Tree(parent = root, children = Array[Tree](), splitFeatureValue = subset(0).fieldValue(bestFeatureIndex))
       buildDecisionTree(subset, child, remainingFeatureIndices - bestFeatureIndex)
     }
-    return root.copy(children = children)
+    return root.copy(children = children, splitFeature = SplitFeature(bestFeatureIndex))
 
   }
 
@@ -82,6 +82,9 @@ object MainApp extends App{
   }
 
   override def main (args: Array[String]): Unit ={
-
+    val piece1 = new PieceOfData(new Label("A"), Array[Feature](new Feature("noga"), new Feature("stopa")))
+    val piece2 = new PieceOfData(new Label("B"), Array[Feature](new Feature("noga"), new Feature("dlon")))
+    val piece3 = new PieceOfData(new Label("C"), Array[Feature](new Feature("reka"), new Feature("dlon")))
+    val tree = decisionTree(Array(piece1, piece2, piece3))
   }
 }
