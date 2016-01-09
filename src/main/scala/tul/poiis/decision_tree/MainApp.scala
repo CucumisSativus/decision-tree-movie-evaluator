@@ -70,7 +70,7 @@ object MainApp extends App{
 
     val splittedData = splitData(data, bestFeatureIndex)
     val children = splittedData.map { subset =>
-      val child = Tree(parent = root, children = Array[Tree](), splitFeatureValue = subset(0).fieldValue(bestFeatureIndex))
+      val child = Tree(parent = root, children = Array[Tree](), splitFeatureValue = subset(0).fieldValue(bestFeatureIndex), splitFeature = new SplitFeature(bestFeatureIndex))
       buildDecisionTree(subset, child, remainingFeatureIndices - bestFeatureIndex)
     }
     return root.copy(children = children, splitFeature = SplitFeature(bestFeatureIndex))
@@ -81,10 +81,26 @@ object MainApp extends App{
     buildDecisionTree(data, Tree(null, Array[Tree]()), data(0).fields.indices.toSet)
   }
 
+  def classifyPieceOfData(tree: Tree, pieceOfData: PieceOfData): Label ={
+    if(tree.children.isEmpty){
+      return tree.label
+    }
+    else{
+      val properChildren = tree.children.filter(child => child.splitFeatureValue == pieceOfData.fieldValue(tree.splitFeature.index))
+      return classifyPieceOfData(properChildren(0), pieceOfData);
+    }
+  }
+
   override def main (args: Array[String]): Unit ={
     val piece1 = new PieceOfData(new Label("A"), Array[Feature](new Feature("noga"), new Feature("stopa")))
     val piece2 = new PieceOfData(new Label("B"), Array[Feature](new Feature("noga"), new Feature("dlon")))
     val piece3 = new PieceOfData(new Label("C"), Array[Feature](new Feature("reka"), new Feature("dlon")))
     val tree = decisionTree(Array(piece1, piece2, piece3))
+
+    val testPiece = new PieceOfData(new Label(""), Array[Feature](new Feature("noga"), new Feature("dlon")))
+
+    System.out.println(classifyPieceOfData(tree, testPiece).name)
+
+    System.out.println("Dupa");
   }
 }
