@@ -1,4 +1,7 @@
 package tul.poiis.decision_tree
+
+import java.io.{PrintWriter, File}
+
 import scala.math.log
 
 object MainApp extends App{
@@ -45,9 +48,12 @@ object MainApp extends App{
     data.map(x => x.label).distinct
   }
 
-  def majorityVote(data: Array[PieceOfData], node: Tree): Tree ={
+  def majorityVoteLabel(data: Array[PieceOfData]): Label ={
     val labelsByCount = labelsWithCount(data.map( x=> x.label))
-    val choosenLabel = labelsByCount.maxBy(_._2)._1
+    labelsByCount.maxBy(_._2)._1
+  }
+  def majorityVote(data: Array[PieceOfData], node: Tree): Tree ={
+    val choosenLabel = majorityVoteLabel(data)
     node.copy(label = choosenLabel)
   }
 
@@ -70,7 +76,7 @@ object MainApp extends App{
 
     val splittedData = splitData(data, bestFeatureIndex)
     val children = splittedData.map { subset =>
-      val child = Tree(parent = root, children = Array[Tree](), splitFeatureValue = subset(0).fieldValue(bestFeatureIndex), splitFeature = new SplitFeature(bestFeatureIndex))
+      val child = Tree(parent = root, children = Array[Tree](), splitFeatureValue = subset(0).fieldValue(bestFeatureIndex), splitFeature = new SplitFeature(bestFeatureIndex), label = majorityVoteLabel(subset))
       buildDecisionTree(subset, child, remainingFeatureIndices - bestFeatureIndex)
     }
     return root.copy(children = children, splitFeature = SplitFeature(bestFeatureIndex))
@@ -87,20 +93,47 @@ object MainApp extends App{
     }
     else{
       val properChildren = tree.children.filter(child => child.splitFeatureValue == pieceOfData.fieldValue(tree.splitFeature.index))
-      return classifyPieceOfData(properChildren(0), pieceOfData);
+      if(properChildren.size > 0 ) {
+        return classifyPieceOfData(properChildren(0), pieceOfData);
+      }
+      else{
+        return tree.children.sortWith(_.children.size < _.children.size).reverse.map(_.label).head
+      }
     }
   }
 
+  def decisionTreeForUsers(evaluationByUser: Map[Int, List[Evaluation]]): Map[Int, Tree] ={
+    evaluationByUser.par.map { case(userId, evaluations) =>
+      println(s"Preparing tree for user ${userId}")
+      (userId, decisionTree(evaluations.map(_.toPieceOfData).toArray))
+    }.seq
+  }
+
+  def predictionLine(evalId:Int, userId:Int, movieId: Int, evaluation: Int): String ={
+    "%d;%d;%d;%d".format(evalId, userId, movieId, evaluation)
+  }
+
+  def obtainPrediction(evalId: Int, userId: Int, movieId: Int, moviesMap: Map[Int, Movie], treesByUser: Map[Int, Tree]): String ={
+    println(s"Obtaining prediction for eval ${evalId} userId ${userId} movieId ${movieId}")
+    val movie = moviesMap(movieId)
+    val properTree = treesByUser(userId)
+    val treeResult = classifyPieceOfData(properTree, new PieceOfData(new Label(""), movie.toSamples.map(new Feature(_)).toArray))
+    predictionLine(evalId, userId, movieId, treeResult.name.toInt)
+  }
   override def main (args: Array[String]): Unit ={
-    val piece1 = new PieceOfData(new Label("A"), Array[Feature](new Feature("noga"), new Feature("stopa")))
-    val piece2 = new PieceOfData(new Label("B"), Array[Feature](new Feature("noga"), new Feature("dlon")))
-    val piece3 = new PieceOfData(new Label("C"), Array[Feature](new Feature("reka"), new Feature("dlon")))
-    val tree = decisionTree(Array(piece1, piece2, piece3))
+    val moviesMap = InputParsers.readMoviesFile(args(0))
+    println("Movies map prepared")
+    val usersEvaluation = InputParsers.readTrainSetFile(args(1), moviesMap)
+    println("User evaluations prepared")
+    val userTrees = decisionTreeForUsers(usersEvaluation)
+    val unknows = InputParsers.readUnknowns(args(2))
+    val resultLines = unknows.par.map(u => obtainPrediction(u._1, u._2, u._3, moviesMap, userTrees)).seq
+    val pw = new PrintWriter(new File(args(3)))
+    resultLines.foreach{ line =>
+      pw.write(line)
+      pw.write("\n")
+    }
+    pw.close()
 
-    val testPiece = new PieceOfData(new Label(""), Array[Feature](new Feature("noga"), new Feature("dlon")))
-
-    System.out.println(classifyPieceOfData(tree, testPiece).name)
-
-    System.out.println("Dupa");
   }
 }

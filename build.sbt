@@ -7,6 +7,8 @@ lazy val commonSettings = Seq(
 lazy val root = (project in file(".")).
   settings(commonSettings: _*).
     settings(
-      name := "decision-tree-evaluator"
+      name := "decision-tree-evaluator",
+      libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.2.2"
+
     )
 
