@@ -104,7 +104,7 @@ object MainApp extends App{
 
   def decisionTreeForUsers(evaluationByUser: Map[Int, List[Evaluation]]): Map[Int, Tree] ={
     evaluationByUser.par.map { case(userId, evaluations) =>
-      println(s"Preparing tree for user ${userId}")
+      //println(s"Preparing tree for user ${userId}")
       (userId, decisionTree(evaluations.map(_.toPieceOfData).toArray))
     }.seq
   }
@@ -114,12 +114,37 @@ object MainApp extends App{
   }
 
   def obtainPrediction(evalId: Int, userId: Int, movieId: Int, moviesMap: Map[Int, Movie], treesByUser: Map[Int, Tree]): String ={
-    println(s"Obtaining prediction for eval ${evalId} userId ${userId} movieId ${movieId}")
+    //println(s"Obtaining prediction for eval ${evalId} userId ${userId} movieId ${movieId}")
     val movie = moviesMap(movieId)
     val properTree = treesByUser(userId)
     val treeResult = classifyPieceOfData(properTree, new PieceOfData(new Label(""), movie.toSamples.map(new Feature(_)).toArray))
     predictionLine(evalId, userId, movieId, treeResult.name.toInt)
   }
+
+  def printTree(tree: Tree): Unit ={
+	//printIndent(tree.splitFeature.index)
+	println("----------")
+	//printIndent(tree.splitFeature.index)
+	if (tree.label != null) {
+		println("label: " + tree.label.name)
+	}
+	//printIndent(tree.splitFeature.index)
+	println("split ind: " + tree.splitFeature.index)
+	//printIndent(tree.splitFeature.index)
+	println("split val: " + tree.splitFeatureValue)
+	//println("child num: " + tree.children.length)
+	for( i <- 0 to tree.children.length-1) {
+		printTree(tree.children(i))
+	}
+  }
+
+  def printIndent(n: Int): Unit ={
+	var i=0
+	for (i <- 1 to n) {
+	  print("    ")
+	}
+  }
+
   override def main (args: Array[String]): Unit ={
     val moviesMap = InputParsers.readMoviesFile(args(0))
     println("Movies map prepared")
@@ -134,6 +159,6 @@ object MainApp extends App{
       pw.write("\n")
     }
     pw.close()
-
+	printTree(userTrees.get(69).get)
   }
 }
