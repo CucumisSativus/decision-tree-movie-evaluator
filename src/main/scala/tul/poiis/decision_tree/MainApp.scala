@@ -133,7 +133,7 @@ object MainApp extends App{
 	//printIndent(tree.splitFeature.index)
 	println("split val: " + tree.splitFeatureValue)
 	//println("child num: " + tree.children.length)
-	for( i <- 0 to tree.children.length-1) {
+	for( i <- 0 until tree.children.length) {
 		printTree(tree.children(i))
 	}
   }
